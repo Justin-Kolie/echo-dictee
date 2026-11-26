@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Écho — Dictée vocale</title>
+  <meta name="description" content="Dictée vocale en temps réel en français et en anglais, avec traduction écrite et vocale.">
+  <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0d14" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Écho">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- En-tête -->
+    <header class="top">
+      <div class="brand">
+        <img src="icons/icon-192.png" alt="" width="34" height="34">
+        <span>Écho</span>
+      </div>
+      <div class="top-actions">
+        <button class="chip-install" id="installBtn" hidden>Installer</button>
+        <button class="icon-btn" id="newBtn" aria-label="Nouvelle note" title="Nouvelle note">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button class="icon-btn" id="historyBtn" aria-label="Historique" title="Historique">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+        </button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Réglages" title="Réglages">
+          <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Bannière d'installation / compatibilité -->
+    <div class="notice" id="notice" hidden></div>
+
+    <!-- Langues -->
+    <section class="langbar" aria-label="Langues">
+      <div class="seg" role="radiogroup" aria-label="Langue de dictée">
+        <button role="radio" data-lang="fr" aria-checked="true">Français</button>
+        <button role="radio" data-lang="en" aria-checked="false">English</button>
+      </div>
+      <button class="tr-toggle" id="trToggle" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>
+        <span id="trLabel">Traduire</span>
+      </button>
+    </section>
+
+    <!-- Statut -->
+    <div class="status" id="status">
+      <span class="dot"></span><span id="statusText">Prêt</span>
+      <span class="spacer"></span>
+      <span id="counts">0 mot</span>
+    </div>
+
+    <!-- Zone de texte -->
+    <main class="sheet-main">
+      <div class="editor-card">
+        <div id="editor" class="editor" contenteditable="true" spellcheck="true" data-placeholder="Touchez le micro et parlez… Votre texte apparaît ici en temps réel." aria-label="Texte transcrit"></div>
+      </div>
+
+      <div class="tr-card" id="trCard" hidden>
+        <div class="tr-head">
+          <span class="tr-title" id="trTitle">Anglais</span>
+          <span class="tr-state" id="trState"></span>
+          <span class="spacer"></span>
+          <button class="mini" id="trSpeak" aria-label="Écouter la traduction">
+            <svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg><span>Écouter</span>
+          </button>
+          <button class="mini" id="trCopy" aria-label="Copier la traduction">
+            <svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+          </button>
+        </div>
+        <div class="tr-text" id="trText"></div>
+      </div>
+    </main>
+
+    <!-- Barre d'action -->
+    <nav class="dock" aria-label="Actions">
+      <button class="dock-btn" id="copyBtn" aria-label="Copier">
+        <svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span>Copier</span>
+      </button>
+      <button class="dock-btn" id="readBtn" aria-label="Lire à voix haute">
+        <svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg><span>Lire</span>
+      </button>
+      <button class="mic" id="micBtn" aria-label="Démarrer la dictée" aria-pressed="false">
+        <span class="mic-ring"></span>
+        <svg class="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>
+        <svg class="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
+      </button>
+      <button class="dock-btn" id="shareBtn" aria-label="Partager">
+        <svg viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg><span>Partager</span>
+      </button>
+      <button class="dock-btn" id="moreBtn" aria-label="Plus d'actions">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>Plus</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Bulle flottante (façon AssistiveTouch) -->
+  <div class="bubble" id="bubble" role="button" tabindex="0" aria-label="Bulle de dictée : toucher pour démarrer ou arrêter, maintenir pour le menu, double-toucher pour les sous-titres">
+    <div class="bubble-core">
+      <svg class="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>
+      <div class="bars"><i></i><i></i><i></i><i></i></div>
+    </div>
+    <span class="bubble-lang" id="bubbleLang">FR</span>
+  </div>
+  <div class="bubble-cap" id="bubbleCap" hidden></div>
+  <div class="quick" id="quick" hidden>
+    <button data-q="lang"><b id="qLang">EN</b><span>Langue</span></button>
+    <button data-q="tr"><svg viewBox="0 0 24 24"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg><span>Traduire</span></button>
+    <button data-q="copy"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span>Copier</span></button>
+    <button data-q="captions"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M7 13h3M7 10h6M14 13h3"/></svg><span>Sous-titres</span></button>
+  </div>
+
+  <!-- Mode sous-titres plein écran -->
+  <section class="captions" id="captions" hidden aria-label="Sous-titres en direct">
+    <button class="cap-close" id="capClose" aria-label="Fermer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="cap-badge" id="capBadge">FR</div>
+    <div class="cap-body">
+      <p class="cap-text" id="capText"></p>
+      <p class="cap-tr" id="capTr"></p>
+    </div>
+    <button class="mic cap-mic" id="capMic" aria-label="Démarrer ou arrêter">
+      <span class="mic-ring"></span>
+      <svg class="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>
+      <svg class="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
+    </button>
+  </section>
+
+  <!-- Feuilles (historique, réglages, plus) -->
+  <div class="backdrop" id="backdrop" hidden></div>
+
+  <section class="sheet" id="historySheet" hidden aria-label="Historique">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Mes notes</h2><button class="icon-btn" data-close aria-label="Fermer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="histSearch" type="search" placeholder="Rechercher dans mes notes"></label>
+    <div class="hist-list" id="histList"></div>
+    <button class="btn-ghost" id="exportAll">Exporter toutes les notes (.txt)</button>
+  </section>
+
+  <section class="sheet" id="moreSheet" hidden aria-label="Plus d'actions">
+    <div class="grab"></div>
+    <div class="actions">
+      <button data-act="captions"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M7 13h3M7 10h6M14 13h3"/></svg>Sous-titres plein écran</button>
+      <button data-act="download"><svg viewBox="0 0 24 24"><path d="M12 3v13M7 11l5 5 5-5M5 21h14"/></svg>Télécharger en .txt</button>
+      <button data-act="new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouvelle note</button>
+      <button data-act="clear" class="danger"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Effacer le texte</button>
+    </div>
+  </section>
+
+  <section class="sheet" id="settingsSheet" hidden aria-label="Réglages">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>Réglages</h2><button class="icon-btn" data-close aria-label="Fermer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+
+    <div class="group">
+      <h3>Dictée</h3>
+      <label class="row"><span>Accent français</span>
+        <select id="setFr"><option value="fr-FR">France</option><option value="fr-CA">Canada</option><option value="fr-BE">Belgique</option><option value="fr-CH">Suisse</option></select></label>
+      <label class="row"><span>Accent anglais</span>
+        <select id="setEn"><option value="en-US">États-Unis</option><option value="en-GB">Royaume-Uni</option><option value="en-AU">Australie</option><option value="en-IN">Inde</option></select></label>
+      <label class="row sw"><span>Commandes vocales<small>« virgule », « point », « à la ligne »… / “comma”, “new line”…</small></span><input type="checkbox" id="setCmd"><i></i></label>
+      <label class="row sw"><span>Majuscules automatiques</span><input type="checkbox" id="setCap"><i></i></label>
+      <label class="row sw"><span>Garder l'écran allumé pendant la dictée</span><input type="checkbox" id="setWake"><i></i></label>
+    </div>
+
+    <div class="group">
+      <h3>Traduction & voix</h3>
+      <label class="row sw"><span>Traduction vocale automatique<small>Mode interprète : chaque phrase traduite est lue à voix haute</small></span><input type="checkbox" id="setAuto"><i></i></label>
+      <label class="row"><span>Voix française</span><select id="setVoiceFr"></select></label>
+      <label class="row"><span>Voix anglaise</span><select id="setVoiceEn"></select></label>
+      <label class="row"><span>Vitesse de lecture <small id="rateVal">1,0×</small></span><input type="range" id="setRate" min="0.6" max="1.6" step="0.1"></label>
+    </div>
+
+    <div class="group">
+      <h3>Affichage</h3>
+      <label class="row"><span>Taille du texte <small id="sizeVal">20 px</small></span><input type="range" id="setSize" min="16" max="32" step="1"></label>
+      <label class="row"><span>Thème</span><select id="setTheme"><option value="auto">Automatique</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
+      <label class="row sw"><span>Bulle flottante<small>Toucher : dicter · Maintenir : menu · Double-toucher : sous-titres</small></span><input type="checkbox" id="setBubble"><i></i></label>
+    </div>
+
+    <div class="group">
+      <h3>Installer l'application</h3>
+      <div class="install-help" id="installHelp"></div>
+    </div>
+
+    <div class="group">
+      <h3>Données</h3>
+      <p class="hint">Vos notes restent sur cet appareil. Rien n'est enregistré sur un serveur.</p>
+      <button class="btn-ghost danger" id="wipeAll">Supprimer toutes les notes</button>
+    </div>
+    <p class="hint center">Écho v1.0 · Raccourci clavier : Alt + D</p>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
